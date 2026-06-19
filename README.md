@@ -26,6 +26,8 @@ Using the great [Universal Radio Hacker](https://github.com/jopohl/urh) tool wit
 - frame: 29 bits
 - trailer: 250µs high
 
+Messages are repeated with a 7.9ms gap between each message.
+
 The demodulated (repeated - long preamble) signal looks like this:
 
 ![Sulion demodulated signal](img/sulion_message.png)
@@ -34,7 +36,7 @@ As I have a single remote it is difficult to fully decode the protocol, but from
 
 - Remote ID: 17 bits
 - Command code: 5 bits
-- Rolling code: 3 bits
+- Rolling code: 3 bits counter
 - Some kind of checksum: 4 bits
 
 I am not really sure about the checksum algorithm, see `rmt433.yaml`.
@@ -62,7 +64,7 @@ For my remote, the different command codes are:
 | Timer 30m    | 01001 |
 | Timer 2h     | 11001 |
 
-Each _short_ key press send roughly 5 messages.
+Each _short_ key press sends roughly 5 messages.
 
 With all this, it is quite easy to send codes using a `remote_transmitter` with ESPHome. An example can be found in `rmt433.yaml`. It uses a simple 433MHz transmitter like this one (working using 3.3V):
 

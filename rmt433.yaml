@@ -116,7 +116,7 @@ script:
           data->mark(250);
 
           call.set_send_times(5);
-          call.set_send_wait(7900); // 7.9ms
+          call.set_send_wait(7900); // gap between repetitions: 7.9ms
           call.perform();
 
           id(rolling) = (id(rolling) + 1) & 0x07;
