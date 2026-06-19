@@ -20,7 +20,7 @@ It is actually a radio remote, there is no IR LED on the PCB:
 
 It has a single chip STX755M ([datasheet](http://radiumcorp.com/data/STX755M.pdf)) which is a 315/433MHz OOK/ASK transmitter with embedded MCU.
 
-Using the great [Universal Radio Hacker](https://github.com/jopohl/urh) tool, I sniffed the codes sent by all the buttons. The transmission uses fixed bit-width PWM (Pulse Width Modulation) - 1 is encoded as 750µs high/250µs low while 0 is encoded as 250µs high/750µs low (so each bit is 1ms). The protocol is very simple, each messages consist of
+Using the great [Universal Radio Hacker](https://github.com/jopohl/urh) tool with RTL-SDR, I sniffed the codes sent by all the buttons. The transmission uses fixed bit-width PWM (Pulse Width Modulation) - 1 is encoded as 750µs high/250µs low while 0 is encoded as 250µs high/750µs low (so each bit is 1ms). The protocol is very simple, each messages consist of
 
 - preamble: first sequence: 250µs high/250µs low / repeat: 3x 750µs high/250µ
 - frame: 29 bits
