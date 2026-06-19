@@ -2,6 +2,10 @@
 
 This small repository is intended to describe what I discovered about the protocol used by [Sulion ceiling fan](https://sulion.es/56-ventilacion) while trying to control it through domoticz using ESPHome.
 
+The fan looks like this:
+
+![Sulion Cloé XL ceiling fan](img/sulion_cloe_xl.jpg)
+
 It comes with a small remote that looks to be an IR remote:
 
 ![Sulion remote front view](img/sulion_remote_front.jpg)
