@@ -1,0 +1,308 @@
+substitutions:
+  friendly_name: 'esphome-rmt433'
+  device_name: 'esphome-rmt433'
+  project_base: 'Wemos'
+  project_name: 'ESP32'
+  project_version: 'S2 mini'
+  device_description: 'Lolin Wemos ESP32-S2 mini'
+
+esphome:
+  name: $device_name
+  friendly_name: $friendly_name
+  comment: $device_description
+  project:
+    name: ${project_base}.${project_name}
+    version: $project_version
+
+esp32:
+  board: lolin_s2_mini
+  variant: esp32s2
+  framework:
+    type: esp-idf
+    version: latest
+
+logger:
+  level: DEBUG
+  baud_rate: 0
+
+ota:
+  password: ""
+  platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  manual_ip:
+    static_ip: 192.168.0.100
+    gateway: 192.168.0.1
+    subnet: 255.255.255.0
+
+mqtt:
+  broker: 192.168.0.2
+  username: !secret mqtt_user
+  password: !secret mqtt_password
+  discovery_unique_id_generator: mac
+
+uart:
+  rx_pin: GPIO16
+  tx_pin: GPIO17
+  baud_rate: 9600
+
+globals:
+  - id: rolling
+    type: uint8_t
+    restore_value: yes
+    initial_value: '0'
+
+script:
+  - id: send_fan_command
+    parameters:
+      cmd: int
+    then:
+      - lambda: |-
+          auto call = id(rf_tx).transmit();
+          auto *data = call.get_data();
+
+          auto add_bit = [&](bool bit) {
+            if (bit) {
+              data->item(750, 250);  // 1
+            } else {
+              data->item(250, 750);  // 0
+            }
+          };
+
+          // Prefix
+          // First transmit preamble is actually +300 -250 and repeats preamble is 3 1 bits, but just use the longer prefix for all transmissions
+
+          add_bit(1);
+          add_bit(1);
+          add_bit(1);
+
+          const uint32_t device_id = 0b01001111100010100;
+
+          // 17-bit device id
+          for (int i = 16; i >= 0; i--)
+            add_bit((device_id >> i) & 1);
+
+          // 5-bit command
+          for (int i = 4; i >= 0; i--)
+            add_bit((cmd >> i) & 1);
+
+          uint8_t r = id(rolling) & 0x07;
+
+          // rolling code
+          for (int i = 2; i >= 0; i--)
+            add_bit((r >> i) & 1);
+
+          bool b4 = (cmd >> 4) & 1;
+          bool b3 = (cmd >> 3) & 1;
+          bool b2 = (cmd >> 2) & 1;
+          bool b1 = (cmd >> 1) & 1;
+          bool b0 = (cmd >> 0) & 1;
+
+          uint8_t k =
+              ((b4 ^ b0) << 3) |
+              ((!b3) << 2) |
+              ((!b2) << 1) |
+              ((!b1) << 0);
+
+          uint8_t checksum = k ^ r;
+
+          // checksum
+          for (int i = 3; i >= 0; i--)
+            add_bit((checksum >> i) & 1);
+
+          // final high pulse
+          data->mark(250);
+
+          call.set_send_times(5);
+          call.set_send_wait(7900); // 7.9ms
+          call.perform();
+
+          id(rolling) = (id(rolling) + 1) & 0x07;
+
+remote_transmitter:
+  id: rf_tx
+  pin: GPIO40
+  carrier_duty_percent: 100%
+
+button:
+  - platform: template
+    name: Fan Speed 1
+    on_press:
+      - logger.log:
+          format: "Fan Speed 1 button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b10000
+
+  - platform: template
+    name: Fan Speed 2
+    on_press:
+      - logger.log:
+          format: "Fan Speed 2 button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b10010
+
+  - platform: template
+    name: Fan Speed 3
+    on_press:
+      - logger.log:
+          format: "Fan Speed 3 button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b11100
+
+  - platform: template
+    name: Fan Speed 4
+    on_press:
+      - logger.log:
+          format: "Fan Speed 4 button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b01010
+
+  - platform: template
+    name: Fan Speed 5
+    on_press:
+      - logger.log:
+          format: "Fan Speed 5 button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b01111
+
+  - platform: template
+    name: Fan Speed 6
+    on_press:
+      - logger.log:
+          format: "Fan Speed 6 button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b01100
+
+  - platform: template
+    name: Fan Off
+    on_press:
+      - logger.log:
+          format: "Fan Off button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b00010
+
+  - platform: template
+    name: Light Off
+    on_press:
+      - logger.log:
+          format: "Light Off button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b00100
+
+  - platform: template
+    name: Light Plus
+    on_press:
+      - logger.log:
+          format: "Light Plus button pressed"
+          level: INFO 
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b01000
+
+  - platform: template
+    name: Light Minus
+    on_press:
+      - logger.log:
+          format: "Light Minus button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b10001
+
+  - platform: template
+    name: Light White
+    on_press:
+      - logger.log:
+          format: "Light White button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b10011
+
+  - platform: template
+    name: Light Yellow
+    on_press:
+      - logger.log:
+          format: "Light Yellow button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b01101
+
+  - platform: template
+    name: Light Grey
+    on_press:
+      - logger.log:
+          format: "Light Grey button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b01110
+
+  - platform: template
+    name: Wind Mode
+    on_press:
+      - logger.log:
+          format: "Wind Mode button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b10101
+
+  - platform: template
+    name: Timer 30m
+    on_press:
+      - logger.log:
+          format: "Timer 30m button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b01001
+
+  - platform: template
+    name: Timer 2h
+    on_press:
+      - logger.log:
+          format: "Timer 2h button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b11001
+
+  - platform: template
+    name: Cool mode
+    on_press:
+      - logger.log:
+          format: "Cool mode button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b00101
+
+  - platform: template
+    name: Warm mode
+    on_press:
+      - logger.log:
+          format: "Warm mode button pressed"
+          level: INFO
+      - script.execute:
+          id: send_fan_command
+          cmd: 0b00011
